@@ -1,0 +1,12 @@
+Given the observation images of a sampled action plan (the first image is the initial state, the second image is the final state from the agent view and the last image is the the final state from robot gripper wrist view), you are an external verifier. Help the robot agent describe the action and determine if it achieves the specified subtask.
+Subtask: {TASK_INSTRUCTION}.
+Your verification must follow this logical process:
+Identify the target object in the first image. The target object is present in the first image. If you don't see it, look again for the target object because it is occluded behind other items. Try your best to find the most relevant object in the first image if you think there is no exact match as the target object.  Describe where it is located. 
+If the subtask is about picking, analyze both the wrist view and the agent view of the final state to check:
+a) Is the robot's gripper holding an object? Using only the gripper's wrist view to determine which object is being grasped. In the wrist view, you can see two pads of a gripper. The object being grasped is right between two pads. You also need to check if the grasp is secure. 
+If the subtask is about placing, analyze the wrist view and the agent view of the final state to check:
+b) Is the object in/on the target place? If object is not visible, compare the first and second image to see whether target object disappears from the table
+If the subtask is about closing, analyze the wrist view and the agent view of the final state to check:
+c) Is the object fully closed?
+Determine the outcome based on this intermediate thinking.
+Finally, provide your verification in the format "Verification: Success" or "Verification: Failure".

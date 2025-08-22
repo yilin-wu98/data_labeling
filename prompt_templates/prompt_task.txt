@@ -1,0 +1,7 @@
+Task:
+You will be presented with an image of a robot and a few objects on the table. Your task is to generate one sentence user instructions to set the task goal for the robot. The task should be more than one step. 
+For example, One instruction is to {task_description}.
+
+The output should be a JSON object with the following fields:
+task instruction: 
+Note: Please follow the JSON output format strictly and do not include any other text in your response. The task instruction should only include tasks that are relevant to the objects in the image and should hallucinate new objects.

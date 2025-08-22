@@ -1,0 +1,14 @@
+Task:
+You will be presented with a short video clip of a robot performing certain manipulation tasks on the table. Your task is to reason about the task to give the plans and monitor the current progress.
+The task goal is to {task_description}.
+The scene description should be a brief description of the current objects on the table and their status at the beginning of the video.
+The plans should be a list of action steps to complete the task goal where each step is a brief action description (e.g, pick up sth, place it somewhere, close sth, open sth, move sth to somewhere else, etc.)
+The current progress should be a summary of the actions that have been taken so far. Please keep track of the plan steps that are already been executed and also do not hallucinate about the steps that haven't been achieved.
+The next step should be the next action to be taken.
+The output should be a JSON object with the following fields:
+scene_description: ...
+plans: ...
+current_progress: ...
+next_step: ...
+Note: Please follow the JSON output format strictly and do not include any other text in your response. Also keep the plans precise and brief.
+Now, please look at the following video carefully.

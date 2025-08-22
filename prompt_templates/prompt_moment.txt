@@ -1,0 +1,12 @@
+Task:
+You will be presented with a short video clip of a robot performing certain manipulation tasks on the table. Your task is to reason about the task to give the plans and monitor the task progress along the way.
+The task goal is to {task_description}.
+The scene description should be a brief description of the current objects on the table and their status at the beginning of the video.
+The plans should be a list of action steps to complete the task goal where each step is a brief action description (e.g, pick up sth, place it somewhere, close sth, open sth, move sth to somewhere else, etc.) based only on task goal without examining the video.
+The critical moments should be a list of time (precise to millisecond) and the frame number (10 fps) in the video for completing each plan step. Please identify the exact moment the step finishes and make sure the list of critical moments is the same length as plans. The time should be aa.b format and be precise about b as milliseconds.
+The output should be a JSON object with the following fields:
+scene_description: ...
+plans: ...
+critical moment: ...
+Note: Please follow the JSON output format strictly and do not include any other text in your response. Also keep the plans precise and brief.
+Now, please look at the following video carefully.

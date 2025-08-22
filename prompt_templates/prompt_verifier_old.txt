@@ -1,0 +1,6 @@
+Given the observations of a sampled action plan in the sequences of images (3 images for the beginning, the middle and the last step), you are an external verifier. 
+Help the robot agent describe the action plan in text and determines whether it achieves the subtask: {TASK_INSTRUCTION}. 
+Note:
+1. Please pay attention to the robot gripper in the last image as it shows where the robot gripper interacts. 
+2. Please pay attention to the spatial location of the objects. Don't mistake the background objects as the object the gripper interacts with.
+3. Your output should include the verification that has the format of "Verification: Success" or "Verification: Failure".
