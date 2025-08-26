@@ -8,7 +8,9 @@ from collections import defaultdict
 import random 
 ## import deepcopy of the dictionary
 import copy
-FILENAME_RE = re.compile(r"episode_(\d+)_task_(\d+)_gemini\.txt")
+## file middle like episode_0000_task_0_instruction_xxxx_gemini.txt
+# FILENAME_RE = re.compile(r"episode_(\d+)_task_(\d+)_gemini\.txt")
+FILENAME_RE = re.compile(r"episode_(\d+)_task_(\d+)_instruction_.*\.txt")
 FILENAME_RE_SCENE_DESCRIPTION = re.compile(r"task_(\d+).txt")
 def parse_frames(path):
         """
@@ -48,7 +50,7 @@ def parse_frames(path):
         plans = data.get("plans", [])
         if not plans:
             print(path)
-        keys = ["critical moment", "critical_moments", "critical_moment"]
+        keys = ["critical moment", "critical_moments", "critical_moment", "critical moments"]
         for key in keys:
             critical_moment = data.get(key, [])
             if not (critical_moment):
@@ -131,6 +133,15 @@ def load_instructions(dir: str):
             task = json.loads(line)
             task_id = task["task_index"]
             instruction = task["task"]
+            if instruction == "close the microwave":
+                instruction = "move away the yellow and white mug to close the microwave door"
+            if 'basket' in instruction: 
+                ## every sentence is like "pick up xxx and put it in the basket", extract xxx from v
+                object_name = instruction.split('pick up ')[1].split(' and put it in the basket')[0]
+                instruction = f"put {object_name} in the basket"
+            if 'put it in the tray' in instruction :
+                object_name = instruction.split('pick up ')[1].split(' and put it in the tray')[0]
+                instruction = f"put {object_name} in the tray"
             instructions[task_id] = instruction
     return instructions
 
@@ -157,45 +168,57 @@ def load_episode_length(dir: str):
 
     return lengths
 
-def construct_cot_data(scene_descriptions, reasoning_interval, instructions, lengths):
+def construct_cot_data( reasoning_interval, instructions, lengths):
      ## initialize the dictionary
-     cot_reasoning_data = {}
+    #  cot_reasoning_data = {}
+     ## load the cot_reasoning_data from cot_simple.json
+     cot_reasoning_data = json.loads(''.join(open('cot_simple.json', "r").readlines()))
+     ## read the last episode index
+     last_episode_index = max([int(k) for k in cot_reasoning_data.keys() if k != "vision_language_episode_idx"])
      ## enumerate the items in the reasoning_interval
      ## loading in the order the sorted episode_id key from 0 to larger number 
     #  for episode_id in sorted(reasoning_interval.keys()):
         # task_id, plans, frames = reasoning_interval[episode_id]
+    
+     ep_map = json.loads(''.join(open(os.path.join("./", "filter_ep_data/ep_map.json"), "r").readlines()))
+    #  task_map = json.loads(''.join(open(os.path.join("./", "filter_ep_data/task_map.json"), "r").readlines()))
      for episode_id, (task_id, plans, frames) in reasoning_interval.items():
+        print('Episode id:', episode_id)
+        # if episode_id not in ep_map.keys():
+        #     continue
+        # new_episode_id = ep_map[episode_id]
+        # breakpoint()
         ## get the scene description for the episode
         episode_data = {}
         ## start interval is 0 to a random number from 12 -14
         start_end = random.randint(12, 14)
         episode_data["episode_start_interval"] = [0, start_end]
         episode_data["segments"] = []
-        scene_description = scene_descriptions[int(task_id)]
+        # scene_description = scene_descriptions[int(task_id)]
         episode_length = lengths[int(episode_id)]
         ## get the random instruction for the episode
         # random_instruction = random.choice(diverse_instructions[task_id])
         random_instruction = instructions[task_id]
         # breakpoint()
         ## check if the length of the plans is the same as the length of the frames
-        if len(plans) != len(scene_description) - 1:
-            if task_id == 1:
-                ## remove the first frame
-                print(f"episode_id {episode_id} task_id {task_id} has {len(frames)} frames and {len(plans)} plans, length of scene_description is {len(scene_description)}")
+        # if len(plans) != len(scene_description) - 1:
+        #     if task_id == 1:
+        #         ## remove the first frame
+        #         print(f"episode_id {episode_id} task_id {task_id} has {len(frames)} frames and {len(plans)} plans, length of scene_description is {len(scene_description)}")
                 
-                ## remove the second scene description
-                ## pop the key of 1 from scene_description
-                # scene_description.pop(1)
-                scene_description = [scene_description[0]] + scene_description[2:]
-            elif task_id in [0, 2, 3, 5, 6,7]:
-                ## remove 0, 2, 
-                print(f"episode_id {episode_id} task_id {task_id} has {len(frames)} frames and {len(plans)} plans, length of scene_description is {len(scene_description)}")
+        #         ## remove the second scene description
+        #         ## pop the key of 1 from scene_description
+        #         # scene_description.pop(1)
+        #         scene_description = [scene_description[0]] + scene_description[2:]
+        #     elif task_id in [0, 2, 3, 5, 6,7]:
+        #         ## remove 0, 2, 
+        #         print(f"episode_id {episode_id} task_id {task_id} has {len(frames)} frames and {len(plans)} plans, length of scene_description is {len(scene_description)}")
               
-                scene_description = [scene_description[0]]  + scene_description[2::2]
-                # scene_description.pop(1)
-                # scene_description.pop(3)
-            else: 
-                print(f"Task id {task_id} episode_id {episode_id} is not supported")
+        #         scene_description = [scene_description[0]]  + scene_description[2::2]
+        #         # scene_description.pop(1)
+        #         # scene_description.pop(3)
+        #     else: 
+        #         print(f"Task id {task_id} episode_id {episode_id} is not supported")
         # print(f"episode_id {episode_id} task_id {task_id} has {len(frames)} frames and {len(plans)} plans, scene_description has {len(scene_description)} items")
         frames[-1] = episode_length - 1
         ## join the plans into a string, each start with a number.
@@ -262,7 +285,8 @@ def construct_cot_data(scene_descriptions, reasoning_interval, instructions, len
                 segment["updated_content_w_instruction"] = updated_content_w_instruction
             episode_data["segments"].append(segment)
             last_segment = copy.deepcopy(segment)
-        cot_reasoning_data[episode_id] = episode_data
+        final_episode_id = int(episode_id) + last_episode_index + 1
+        cot_reasoning_data[str(final_episode_id)] = episode_data
     ## add the last item
      cot_reasoning_data["vision_language_episode_idx"] = []
      return cot_reasoning_data
@@ -273,21 +297,21 @@ def save_cot_data(cot_data, path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--folder", type=str, default="gt_responses")
+    parser.add_argument("--folder", type=str, default="relabel_data")#"gt_responses")
     args = parser.parse_args()
     ## load the scene description
-    scene_description = load_scene_descriptions(os.path.join(args.folder, "../exported_data/scene_descriptions"))
+    # scene_description = load_scene_descriptions(os.path.join(args.folder, "../exported_data/scene_descriptions"))
     ## load the reasoning interval
     reasoning_interval = load_reasoning_interval(args.folder)
     ## load the instructions
-    instructions = load_instructions(os.path.join(args.folder, "../exported_data"))
+    instructions = load_instructions(os.path.join(args.folder, "../libero_90"))
     # diverse_instructions = load_diverse_instructions(os.path.join(args.folder, "../exported_data"))
     ## load the episode length
-    lengths = load_episode_length(os.path.join(args.folder, "../exported_data"))
+    lengths = load_episode_length(os.path.join(args.folder, "../libero_90"))
     ## construct the cot data
-    cot_data = construct_cot_data(scene_description, reasoning_interval, instructions, lengths)
+    cot_data = construct_cot_data(reasoning_interval, instructions, lengths)
     ## save the cot data
-    save_cot_data(cot_data, os.path.join(args.folder, "../cot_simple.json"))
+    save_cot_data(cot_data, os.path.join(args.folder, "../cot_simple_libero_100.json"))
 
 if __name__ == "__main__":
     main()

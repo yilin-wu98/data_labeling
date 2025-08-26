@@ -1,6 +1,6 @@
 import os
 import time
-from google.cloud import storage
+# from google.cloud import storage
 from google import genai
 from google.genai.types import Part#, GenerateContentRequest
 from google.api_core.exceptions import DeadlineExceeded
@@ -11,7 +11,7 @@ from tqdm import tqdm
 # Configuration: adjust as needed
 # -----------------------------------------------
 VIDEO_FOLDER = os.path.join("exported_data", "videos_fps10")
-INSTR_FOLDER = os.path.join("exported_data", "instructions")
+# INSTR_FOLDER = os.path.join("exported_data", "instructions")
 OUTPUT_FOLDER = "gemini_responses"
 GCS_BUCKET = os.getenv("GCS_BUCKET", "your-gcs-bucket-name")
 MODEL_NAME = "gemini-2.5-pro-preview-06-05"
@@ -93,17 +93,17 @@ def main():
     # with open(uri_log_path, "w", encoding="utf-8") as uri_log:
         # uri_log.write("filename,video_uri\n")
 
-    for idx, vid_filename in tqdm(enumerate(video_files)):
+    for idx, vid_filename in tqdm(enumerate(video_files[8:9])):
         vid_path = os.path.join(VIDEO_FOLDER, vid_filename)
         base_name = os.path.splitext(vid_filename)[0]
-        instr_filename = f"{base_name}.txt"
-        instr_path = os.path.join(INSTR_FOLDER, instr_filename)
+        # instr_filename = f"{base_name}.txt"
+        # instr_path = os.path.join(INSTR_FOLDER, instr_filename)
 
         print(f"\n[{idx+1}/{len(video_files)}] Processing {vid_filename} …")
 
-        if not os.path.isfile(instr_path):
-            print(f"  ⚠️ Instruction file not found: {instr_filename}. Skipping.")
-            continue
+        # if not os.path.isfile(instr_path):
+            # print(f"  ⚠️ Instruction file not found: {instr_filename}. Skipping.")
+            # continue
 
         # 1) Upload video to GCS
         # blob_name = f"libero_videos/{vid_filename}"
@@ -115,32 +115,34 @@ def main():
         # uri_log.write(f"{vid_filename},{video_uri}\n")
 
         # 2) Load instruction
-        instruction_text = load_instruction(instr_path)
+        # instruction_text = load_instruction(instr_path)
+        instruction_text = " ".join(base_name.split("_")[5:]) 
+        print(f"  • Loaded instruction: {instruction_text}")
 
         # 3) Call Gemini with GCS URI
-        try:
-            gemini_output = call_gemini_with_gcs_video(
-                client = client,
-                video_file = video_file,
-                instruction_text=instruction_text,
-                timeout=RPC_TIMEOUT,
-                query_type=args.query_type
-            )
+        # try:
+        gemini_output = call_gemini_with_gcs_video(
+            client = client,
+            video_file = video_file,
+            instruction_text=instruction_text,
+            timeout=RPC_TIMEOUT,
+            query_type=args.query_type
+        )
 
-            # 4) Write out the response as a .txt file
-            resp_filename = f"{base_name}_gemini.txt"
-            resp_path = os.path.join(OUTPUT_FOLDER, resp_filename)
-            with open(resp_path, "w", encoding="utf-8") as rf:
-                rf.write(gemini_output)
-            print(f"  ✓ Wrote Gemini response to {resp_path}")
+        # 4) Write out the response as a .txt file
+        resp_filename = f"{base_name}_gemini.txt"
+        resp_path = os.path.join(OUTPUT_FOLDER, resp_filename)
+        with open(resp_path, "w", encoding="utf-8") as rf:
+            rf.write(gemini_output)
+        print(f"  ✓ Wrote Gemini response to {resp_path}")
 
-            # Optional: throttle between requests
-            time.sleep(1)
+        # Optional: throttle between requests
+        time.sleep(1)
 
-        except DeadlineExceeded:
-            print("  ⚠️ Request timed out. Consider increasing RPC_TIMEOUT.")
-        except Exception as e:
-            print(f"  ⚠️ Failed to process {vid_filename}: {e}")
+        # except DeadlineExceeded:
+            # print("  ⚠️ Request timed out. Consider increasing RPC_TIMEOUT.")
+        # except Exception as e:
+            # print(f"  ⚠️ Failed to process {vid_filename}: {e}")
 
     print("\nAll queries complete. Check responses and video_uris.txt in:", os.path.abspath(OUTPUT_FOLDER))
 
